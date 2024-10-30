@@ -1,12 +1,13 @@
 
+
 import json
 import zipfile
 import os
 import boto3
 from botocore.exceptions import ClientError
 
-BUCKET_NAME = 's3bucket811'
-PREFIX = 'processed-data/'
+BUCKET_NAME = 'sagemaker-studio-582786760608-ib3nc2vjeo'
+PREFIX = 'preprocess/'
 
 # Function below unzips the archive to the local directory. 
 
@@ -106,4 +107,32 @@ def preprocess(s3_input_uri):
     labeled_data = label_data(unzipped_path)
     new_split_sentence_data = split_sentences(labeled_data)
     write_data(new_split_sentence_data, os.path.basename(s3_input_uri), .9)
+
+
+def lambda_handler(event, context):
+    # Extract the S3 URI from the event
+    s3_input_uri = event.get("s3-dataset-uri", "")
+    
+    # Check if the S3 URI is provided
+    if not s3_input_uri:
+        return {
+            "statusCode": 400,
+            "body": json.dumps("Error: 's3-dataset-uri' key not found in the event.")
+        }
+    
+    try:
+        # Call the preprocess function with the S3 URI
+        preprocess(s3_input_uri)
+        return {
+            "statusCode": 200,
+            "body": json.dumps("Preprocessing Successful!")
+        }
+    except Exception as e:
+        # Log the error and return a failure message
+        print(f"Error during preprocessing: {e}")
+        return {
+            "statusCode": 500,
+            "body": json.dumps(f"Error during preprocessing: {str(e)}")
+        }
+
 
